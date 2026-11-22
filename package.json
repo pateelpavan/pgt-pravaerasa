@@ -11,7 +11,7 @@
     "server": "node server/index.js",
     "client": "npm --prefix client run dev",
     "build": "npm --prefix client install && npm --prefix client run build",
-    "vercel-build": "npm --prefix client install && npm --prefix client run build",
+    "vercel-build": "cd client && npm install --include=dev && npm run build",
     "test": "node test-server.js"
   },
   "keywords": [
