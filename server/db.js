@@ -1,11 +1,28 @@
 const fs = require('fs');
 const path = require('path');
 
-const DATA_DIR = path.join(__dirname, 'data');
+const isVercel = Boolean(process.env.VERCEL);
+const DATA_DIR = isVercel ? '/tmp' : path.join(__dirname, 'data');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+try {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
+} catch (e) {
+  // Directory might be read-only or already exist
+}
+
+// On Vercel serverless environment, copy packaged initial db to /tmp
+if (isVercel) {
+  try {
+    const packagedDb = path.join(__dirname, 'data', 'db.json');
+    if (!fs.existsSync(DB_FILE) && fs.existsSync(packagedDb)) {
+      fs.copyFileSync(packagedDb, DB_FILE);
+    }
+  } catch (e) {
+    console.warn('Could not copy packaged db to /tmp:', e.message);
+  }
 }
 
 function getInitialData() {

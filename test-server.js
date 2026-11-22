@@ -15,19 +15,19 @@ async function runTests() {
   app.use('/api/contact', require('./server/routes/contact'));
   app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
-  const server = app.listen(5099, async () => {
+  const server = app.listen(5099, '127.0.0.1', async () => {
     console.log('Test server running on port 5099');
 
     try {
       // 1. Health check
       console.log('\n[1] Checking Health Check Endpoint...');
-      const healthRes = await fetch('http://localhost:5099/api/health');
+      const healthRes = await fetch('http://127.0.0.1:5099/api/health');
       const healthData = await healthRes.json();
       console.log('✓ Health status:', healthData.status);
 
       // 2. Hidden Admin Login Test
       console.log('\n[2] Testing Hidden Admin Login (PAVERASAPVTLTD)...');
-      const adminLoginRes = await fetch('http://localhost:5099/api/auth/login', {
+      const adminLoginRes = await fetch('http://127.0.0.1:5099/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -44,7 +44,7 @@ async function runTests() {
 
       // 3. Admin Overview Check
       console.log('\n[3] Testing Admin Overview with Admin Token...');
-      const adminOvRes = await fetch('http://localhost:5099/api/admin/overview', {
+      const adminOvRes = await fetch('http://127.0.0.1:5099/api/admin/overview', {
         headers: { Authorization: `Bearer ${adminToken}` }
       });
       const adminOvData = await adminOvRes.json();
@@ -53,7 +53,7 @@ async function runTests() {
       // 4. Client Registration Test
       console.log('\n[4] Testing Client Registration...');
       const testEmail = `test.client.${Date.now()}@nexustech.io`;
-      const regRes = await fetch('http://localhost:5099/api/auth/register', {
+      const regRes = await fetch('http://127.0.0.1:5099/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -74,7 +74,7 @@ async function runTests() {
 
       // 5. Client Dashboard Access
       console.log('\n[5] Testing Client Dashboard Endpoint...');
-      const clientDashRes = await fetch('http://localhost:5099/api/client/dashboard', {
+      const clientDashRes = await fetch('http://127.0.0.1:5099/api/client/dashboard', {
         headers: { Authorization: `Bearer ${clientToken}` }
       });
       const clientDashData = await clientDashRes.json();
@@ -82,7 +82,7 @@ async function runTests() {
 
       // 6. Security Check: Client attempting to access Admin Endpoint must be FORBIDDEN
       console.log('\n[6] Testing RBAC Security: Client token requesting /api/admin/overview...');
-      const forbiddenRes = await fetch('http://localhost:5099/api/admin/overview', {
+      const forbiddenRes = await fetch('http://127.0.0.1:5099/api/admin/overview', {
         headers: { Authorization: `Bearer ${clientToken}` }
       });
       if (forbiddenRes.status === 403) {
@@ -93,7 +93,7 @@ async function runTests() {
 
       // 7. Contact Form Submission
       console.log('\n[7] Testing Contact Form Submission...');
-      const contactRes = await fetch('http://localhost:5099/api/contact', {
+      const contactRes = await fetch('http://127.0.0.1:5099/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -108,7 +108,7 @@ async function runTests() {
 
       // 8. Admin Meeting Creation
       console.log('\n[8] Testing Admin Meeting Scheduler...');
-      const meetingRes = await fetch('http://localhost:5099/api/admin/meetings', {
+      const meetingRes = await fetch('http://127.0.0.1:5099/api/admin/meetings', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -127,7 +127,7 @@ async function runTests() {
       console.log('✓ Meeting Scheduled successfully! ID:', meetingData.meeting.id);
 
       // 9. Verify Meeting appears on Client Dashboard
-      const clientDashRes2 = await fetch('http://localhost:5099/api/client/dashboard', {
+      const clientDashRes2 = await fetch('http://127.0.0.1:5099/api/client/dashboard', {
         headers: { Authorization: `Bearer ${clientToken}` }
       });
       const clientDashData2 = await clientDashRes2.json();
@@ -136,7 +136,7 @@ async function runTests() {
       // 10. Admin EMI installment payment update
       console.log('\n[10] Testing Admin marking Installment #1 as Paid...');
       const firstInst = clientDashData2.data.installments[0];
-      const payUpdateRes = await fetch(`http://localhost:5099/api/admin/installments/${firstInst.id}/status`, {
+      const payUpdateRes = await fetch(`http://127.0.0.1:5099/api/admin/installments/${firstInst.id}/status`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
