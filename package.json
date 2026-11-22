@@ -1,0 +1,33 @@
+{
+  "name": "paverasa-tech-growth",
+  "version": "1.0.0",
+  "description": "Paverasa Tech Growth (PTG) Freelancing Company Web Application",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "server": "node server/index.js",
+    "client": "npm --prefix client run dev",
+    "build": "npm --prefix client run build",
+    "vercel-build": "npm --prefix client install && npm --prefix client run build",
+    "test": "node test-server.js"
+  },
+  "keywords": [
+    "paverasa",
+    "freelancing",
+    "tech",
+    "dashboard",
+    "client-portal",
+    "admin-portal"
+  ],
+  "author": "Paverasa Private Limited",
+  "license": "ISC",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.119.2",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "nodemailer": "^10.6.1"
+  }
+}

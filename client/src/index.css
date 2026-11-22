@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #f8fafc;
+  --color-foreground: #0f172a;
+  --color-card: #ffffff;
+  --color-card-foreground: #0f172a;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0f172a;
+  --color-primary: #ea580c;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f1f5f9;
+  --color-secondary-foreground: #0f172a;
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #64748b;
+  --color-accent: #fff7ed;
+  --color-accent-foreground: #c2410c;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #e2e8f0;
+  --color-input: #e2e8f0;
+  --color-ring: #ea580c;
+}
+
+@layer base {
+  :root {
+    --background: #f8fafc;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --border: #e2e8f0;
+    --input: #e2e8f0;
+    --ring: #ea580c;
+    --muted: #f1f5f9;
+    --muted-foreground: #64748b;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  html {
+    scroll-behavior: smooth;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: #f8fafc;
+    color: #1e293b;
+    overflow-x: hidden;
+  }
+}
+
+/* Light theme custom scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #f97316;
+}
+
+@keyframes pulseOrangeGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(249, 115, 22, 0.2), 0 0 30px rgba(249, 115, 22, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(249, 115, 22, 0.35), 0 0 45px rgba(249, 115, 22, 0.15);
+  }
+}
+
+.glow-orange {
+  animation: pulseOrangeGlow 4s ease-in-out infinite;
+}
+
+.light-hero-bg {
+  background: radial-gradient(circle at 50% -20%, #ffedd5 0%, #fff7ed 40%, #f8fafc 80%);
+}
+
+.card-white {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+}
+
+.card-white:hover {
+  border-color: #fdba74;
+  box-shadow: 0 10px 15px -3px rgba(249, 115, 22, 0.08), 0 4px 6px -4px rgba(249, 115, 22, 0.05);
+}
