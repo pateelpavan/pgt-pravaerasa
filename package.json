@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Paverasa Tech Growth (PTG) Freelancing Company Web Application",
   "main": "server/index.js",
+  "engines": {
+    "node": ">=18.x"
+  },
   "scripts": {
     "start": "node server/index.js",
     "server": "node server/index.js",
