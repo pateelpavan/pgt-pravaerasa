@@ -1,8 +1,10 @@
 const express = require('express');
 const router = express.Router();
+const bcrypt = require('bcryptjs');
 const { readDb, writeDb } = require('../db');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const { sendPaymentDueReminder } = require('../services/mailer');
+const { isSupabaseConfigured, getSupabase, syncToSupabase } = require('../supabase');
 
 // All admin routes require admin role
 router.use(authenticateToken, requireAdmin);
@@ -50,6 +52,171 @@ router.get('/overview', (req, res) => {
   } catch (error) {
     console.error('Admin overview error:', error);
     res.status(500).json({ success: false, message: 'Failed to retrieve overview statistics.' });
+  }
+});
+
+// GET /api/admin/db-status - Check live Supabase connection status
+router.get('/db-status', async (req, res) => {
+  try {
+    const isConfigured = isSupabaseConfigured();
+    if (!isConfigured) {
+      return res.json({
+        success: true,
+        connected: false,
+        provider: 'Local Encrypted Storage (db.json)',
+        status: 'Active (Fallback)',
+        host: 'Local System File Store',
+        message: 'Supabase URL is not configured yet. System is currently running on the local JSON database engine.',
+        database: 'Local Store'
+      });
+    }
+
+    const client = getSupabase();
+    const startTime = Date.now();
+    const { error } = await client.from('users').select('id', { count: 'exact', head: true });
+    const latency = Date.now() - startTime;
+
+    if (error) {
+      return res.json({
+        success: true,
+        connected: false,
+        provider: 'Supabase Cloud Postgres',
+        status: 'Connection Notice',
+        host: process.env.SUPABASE_URL || 'Configured URL',
+        message: `Connected to Supabase endpoint, but table query returned: ${error.message}. Make sure supabase-schema.sql has been executed in your Supabase SQL Editor.`,
+        latency: `${latency}ms`
+      });
+    }
+
+    return res.json({
+      success: true,
+      connected: true,
+      provider: 'Supabase Cloud Postgres',
+      status: 'Connected & Healthy',
+      host: process.env.SUPABASE_URL,
+      message: 'Active live connection established with Supabase PostgreSQL cloud database.',
+      latency: `${latency}ms`
+    });
+  } catch (err) {
+    res.json({
+      success: true,
+      connected: false,
+      provider: 'Local Encrypted Storage (db.json)',
+      status: 'Active (Local)',
+      message: err.message
+    });
+  }
+});
+
+// POST /api/admin/clients - Manually create new client with hashed password
+router.post('/clients', async (req, res) => {
+  try {
+    const { name, email, phone, company, password } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ success: false, message: 'Name, email, and initial password are required.' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters long.' });
+    }
+
+    const db = readDb();
+    const existing = db.users.find(u => u.email.toLowerCase() === email.trim().toLowerCase());
+    if (existing) {
+      return res.status(400).json({ success: false, message: 'A client with this email address is already registered.' });
+    }
+
+    // Hash password with bcrypt
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const newClient = {
+      id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone ? phone.trim() : '',
+      company: company ? company.trim() : 'Independent Client',
+      password: hashedPassword,
+      role: 'client',
+      createdAt: new Date().toISOString()
+    };
+
+    db.users.push(newClient);
+    writeDb(db);
+
+    // Sync to Supabase if active
+    syncToSupabase('users', {
+      id: newClient.id,
+      name: newClient.name,
+      email: newClient.email,
+      phone: newClient.phone,
+      company: newClient.company,
+      password_hash: newClient.password,
+      role: newClient.role
+    });
+
+    const { password: _, ...safeClient } = newClient;
+    res.status(201).json({
+      success: true,
+      message: `Client ${newClient.name} registered successfully with encrypted password.`,
+      client: safeClient
+    });
+  } catch (error) {
+    console.error('Admin create client error:', error);
+    res.status(500).json({ success: false, message: 'Failed to create client account.' });
+  }
+});
+
+// PUT /api/admin/client/:id/password - Admin updates/resets a client's password (hashed)
+router.put('/client/:id/password', async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ success: false, message: 'New password must be at least 6 characters.' });
+    }
+
+    const db = readDb();
+    const clientIndex = db.users.findIndex(u => u.id === req.params.id && u.role === 'client');
+    if (clientIndex === -1) {
+      return res.status(404).json({ success: false, message: 'Client not found.' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    db.users[clientIndex].password = hashedPassword;
+    writeDb(db);
+
+    res.json({
+      success: true,
+      message: `Password for ${db.users[clientIndex].name} updated and securely hashed.`
+    });
+  } catch (error) {
+    console.error('Admin update password error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update client password.' });
+  }
+});
+
+// DELETE /api/admin/client/:id - Admin deletes a client
+router.delete('/client/:id', (req, res) => {
+  try {
+    const db = readDb();
+    const clientIndex = db.users.findIndex(u => u.id === req.params.id && u.role === 'client');
+    if (clientIndex === -1) {
+      return res.status(404).json({ success: false, message: 'Client not found.' });
+    }
+
+    const removedName = db.users[clientIndex].name;
+    db.users.splice(clientIndex, 1);
+    db.projects = db.projects.filter(p => p.clientId !== req.params.id);
+    db.meetings = db.meetings.filter(m => m.clientId !== req.params.id);
+    db.payments = db.payments.filter(p => p.clientId !== req.params.id);
+    db.installments = db.installments.filter(i => i.clientId !== req.params.id);
+
+    writeDb(db);
+    res.json({ success: true, message: `Client ${removedName} and associated data deleted.` });
+  } catch (error) {
+    console.error('Delete client error:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete client.' });
   }
 });
 

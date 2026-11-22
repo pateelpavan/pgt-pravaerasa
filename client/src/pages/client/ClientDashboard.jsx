@@ -269,11 +269,13 @@ export default function ClientDashboard() {
               <div className="flex items-center gap-2">
                 <Layers className="w-5 h-5 text-orange-600" />
                 <h2 className="text-xl font-bold text-slate-900 font-['Outfit']">
-                  Project Progress: {project?.name || 'Active Initiative'}
+                  Project Progress: {project?.id ? project.name : 'Pending Project Assignment'}
                 </h2>
               </div>
               <p className="text-xs text-slate-500 font-medium">
-                Last updated on {project?.lastUpdated ? new Date(project.lastUpdated).toLocaleDateString() : 'Today'}
+                {project?.id 
+                  ? `Last updated on ${project.lastUpdated ? new Date(project.lastUpdated).toLocaleDateString() : 'Today'}`
+                  : 'Awaiting project scoping by technical leads'}
               </p>
             </div>
 
@@ -283,88 +285,104 @@ export default function ClientDashboard() {
                   ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
                   : project?.status === 'In Progress'
                   ? 'bg-orange-50 text-orange-700 border-orange-300'
-                  : 'bg-blue-50 text-blue-700 border-blue-300'
+                  : 'bg-slate-100 text-slate-600 border-slate-300'
               }`}>
-                ● {project?.status || 'In Progress'}
+                ● {project?.id ? project.status : 'Awaiting Assignment'}
               </span>
             </div>
           </div>
 
-          {/* Description */}
-          {project?.description && (
-            <p className="text-sm text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-200 font-medium">
-              {project.description}
-            </p>
-          )}
-
-          {/* Progress Bar (0-100%) */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs font-bold">
-              <span className="text-slate-600">Overall Milestone Execution</span>
-              <span className="text-orange-600">{project?.progress || 0}% Completed</span>
-            </div>
-            <div className="w-full bg-slate-100 h-3.5 rounded-full p-0.5 border border-slate-200 overflow-hidden">
-              <div
-                className="bg-gradient-to-r from-orange-500 via-amber-500 to-emerald-500 h-full rounded-full transition-all duration-700 shadow-sm"
-                style={{ width: `${project?.progress || 0}%` }}
-              ></div>
-            </div>
-          </div>
-
-          {/* Milestones list with Completed / Pending status */}
-          <div className="space-y-3 pt-2">
-            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider font-['Outfit'] flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-orange-600" />
-              <span>Milestones & Technical Deliverables</span>
-            </h3>
-
-            {(!project?.milestones || project.milestones.length === 0) ? (
-              <p className="text-xs text-slate-500 font-medium">No milestones registered yet.</p>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {project.milestones.map((m) => (
-                  <div
-                    key={m.id}
-                    className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
-                      m.completed
-                        ? 'bg-emerald-50/70 border-emerald-300 text-emerald-900'
-                        : 'bg-slate-50 border-slate-200 text-slate-800'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      {m.completed ? (
-                        <div className="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
-                          <Check className="w-4 h-4" />
-                        </div>
-                      ) : (
-                        <div className="w-7 h-7 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center shrink-0">
-                          <Clock className="w-4 h-4" />
-                        </div>
-                      )}
-                      <div>
-                        <p className={`text-xs font-bold ${m.completed ? 'text-emerald-950' : 'text-slate-800'}`}>
-                          {m.title}
-                        </p>
-                        {m.date && (
-                          <p className="text-[11px] text-slate-500 mt-0.5 font-medium">
-                            Target Date: {m.date}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                      m.completed
-                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                        : 'bg-amber-100 text-amber-800 border-amber-300'
-                    }`}>
-                      {m.completed ? 'Completed' : 'Pending'}
-                    </span>
-                  </div>
-                ))}
+          {!project?.id ? (
+            <div className="p-8 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center mx-auto">
+                <Layers className="w-6 h-6" />
               </div>
-            )}
-          </div>
+              <h3 className="text-base font-bold text-slate-800 font-['Outfit']">
+                No Active Project Assigned Yet
+              </h3>
+              <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed font-medium">
+                Your client portal account is successfully active. Your technical project lead will configure your project scope, deliverables, and sprint milestones. Once updated by administration, real-time progress will appear here.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Description */}
+              {project?.description && (
+                <p className="text-sm text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-200 font-medium">
+                  {project.description}
+                </p>
+              )}
+
+              {/* Progress Bar (0-100%) */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold">
+                  <span className="text-slate-600">Overall Milestone Execution</span>
+                  <span className="text-orange-600">{project?.progress || 0}% Completed</span>
+                </div>
+                <div className="w-full bg-slate-100 h-3.5 rounded-full p-0.5 border border-slate-200 overflow-hidden">
+                  <div
+                    className="bg-gradient-to-r from-orange-500 via-amber-500 to-emerald-500 h-full rounded-full transition-all duration-700 shadow-sm"
+                    style={{ width: `${project?.progress || 0}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Milestones list with Completed / Pending status */}
+              <div className="space-y-3 pt-2">
+                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider font-['Outfit'] flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-orange-600" />
+                  <span>Milestones & Technical Deliverables</span>
+                </h3>
+
+                {(!project?.milestones || project.milestones.length === 0) ? (
+                  <p className="text-xs text-slate-500 font-medium py-3">No milestones registered yet for this project.</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {project.milestones.map((m) => (
+                      <div
+                        key={m.id}
+                        className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
+                          m.completed
+                            ? 'bg-emerald-50/70 border-emerald-300 text-emerald-900'
+                            : 'bg-slate-50 border-slate-200 text-slate-800'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          {m.completed ? (
+                            <div className="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                              <Check className="w-4 h-4" />
+                            </div>
+                          ) : (
+                            <div className="w-7 h-7 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center shrink-0">
+                              <Clock className="w-4 h-4" />
+                            </div>
+                          )}
+                          <div>
+                            <p className={`text-xs font-bold ${m.completed ? 'text-emerald-950' : 'text-slate-800'}`}>
+                              {m.title}
+                            </p>
+                            {m.date && (
+                              <p className="text-[11px] text-slate-500 mt-0.5 font-medium">
+                                Target Date: {m.date}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                          m.completed
+                            ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                            : 'bg-amber-100 text-amber-800 border-amber-300'
+                        }`}>
+                          {m.completed ? 'Completed' : 'Pending'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </section>
       )}
 

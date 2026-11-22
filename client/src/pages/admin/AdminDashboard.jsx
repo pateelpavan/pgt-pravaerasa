@@ -18,7 +18,13 @@ import {
   Sliders, 
   Check,
   Mail,
-  Send
+  Send,
+  Database,
+  Key,
+  Lock,
+  UserPlus,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -31,6 +37,27 @@ export default function AdminDashboard() {
   const [sendingEmailId, setSendingEmailId] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  // Database status
+  const [dbStatus, setDbStatus] = useState(null);
+  const [checkingDb, setCheckingDb] = useState(false);
+
+  // Manual client registration form state
+  const [isAddingClient, setIsAddingClient] = useState(false);
+  const [newClientForm, setNewClientForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    company: '',
+    password: ''
+  });
+  const [showNewClientPwd, setShowNewClientPwd] = useState(false);
+  const [clientSubmitting, setClientSubmitting] = useState(false);
+
+  // Password reset modal state
+  const [pwdModalClient, setPwdModalClient] = useState(null);
+  const [clientNewPassword, setClientNewPassword] = useState('');
+  const [pwdSubmitting, setPwdSubmitting] = useState(false);
 
   // Overview stats
   const [overview, setOverview] = useState({
@@ -94,6 +121,7 @@ export default function AdminDashboard() {
         }
       }
       if (meetsRes.meetings) setMeetingsList(meetsRes.meetings);
+      checkDbConnection();
     } catch (err) {
       console.error('Failed to load admin data:', err);
       setErrorMsg(err.message || 'Error loading administrator records.');
@@ -147,6 +175,92 @@ export default function AdminDashboard() {
     setErrorMsg('');
     setSuccessMsg('');
     loadAdminData();
+    checkDbConnection();
+  };
+
+  const checkDbConnection = async () => {
+    setCheckingDb(true);
+    try {
+      const res = await api.getDbStatus();
+      setDbStatus(res);
+    } catch (err) {
+      setDbStatus({
+        connected: false,
+        provider: 'Local Encrypted Storage (db.json)',
+        status: 'Active (Local)',
+        message: err.message
+      });
+    } finally {
+      setCheckingDb(false);
+    }
+  };
+
+  const handleCreateClient = async (e) => {
+    e.preventDefault();
+    setErrorMsg('');
+    setSuccessMsg('');
+
+    if (!newClientForm.name.trim() || !newClientForm.email.trim() || !newClientForm.password) {
+      setErrorMsg('Please complete client name, business email, and initial password.');
+      return;
+    }
+
+    if (newClientForm.password.length < 6) {
+      setErrorMsg('Password must be at least 6 characters long.');
+      return;
+    }
+
+    setClientSubmitting(true);
+    try {
+      const res = await api.createAdminClient(newClientForm);
+      setSuccessMsg(`✓ ${res.message}`);
+      setNewClientForm({ name: '', email: '', phone: '', company: '', password: '' });
+      setIsAddingClient(false);
+      loadAdminData();
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to register client account.');
+    } finally {
+      setClientSubmitting(false);
+    }
+  };
+
+  const handleUpdateClientPassword = async (e) => {
+    e.preventDefault();
+    if (!pwdModalClient) return;
+    if (!clientNewPassword || clientNewPassword.length < 6) {
+      setErrorMsg('New password must be at least 6 characters.');
+      return;
+    }
+
+    setPwdSubmitting(true);
+    try {
+      const res = await api.updateClientPassword(pwdModalClient.id, { newPassword: clientNewPassword });
+      setSuccessMsg(`✓ ${res.message}`);
+      setPwdModalClient(null);
+      setClientNewPassword('');
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to update client password.');
+    } finally {
+      setPwdSubmitting(false);
+    }
+  };
+
+  const handleDeleteClient = async (clientId, clientName) => {
+    if (!window.confirm(`Are you sure you want to delete client "${clientName}" and all associated data?`)) {
+      return;
+    }
+
+    try {
+      const res = await api.deleteClient(clientId);
+      setSuccessMsg(`✓ ${res.message}`);
+      if (selectedClientId === clientId) {
+        setSelectedClientId('');
+        setSelectedClientData(null);
+      }
+      loadAdminData();
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to delete client.');
+    }
   };
 
   // --- EMAIL DUE NOTIFICATION ACTION ---
@@ -472,7 +586,48 @@ export default function AdminDashboard() {
 
       {/* TAB: OVERVIEW */}
       {activeTab === 'overview' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="space-y-6">
+          {/* Live Database Connection Status Card */}
+          <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-start md:items-center gap-3.5">
+              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
+                dbStatus?.connected
+                  ? 'bg-emerald-100 text-emerald-700 shadow-sm shadow-emerald-500/20'
+                  : 'bg-amber-100 text-amber-700 shadow-sm shadow-amber-500/20'
+              }`}>
+                <Database className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider font-['Outfit']">Database Status</span>
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black border ${
+                    dbStatus?.connected
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                      : 'bg-amber-50 text-amber-700 border-amber-300'
+                  }`}>
+                    <span className={`w-2 h-2 rounded-full ${dbStatus?.connected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+                    {dbStatus?.connected ? 'Supabase Cloud Connected' : 'Local Encrypted Storage (db.json)'}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 font-medium mt-1">
+                  Engine: <strong className="text-slate-800">{dbStatus?.provider || 'Detecting...'}</strong>
+                  {dbStatus?.latency && <span className="text-slate-400"> • Latency: {dbStatus.latency}</span>}
+                  {dbStatus?.message && <span className="text-slate-500 block sm:inline sm:ml-2">({dbStatus.message})</span>}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={checkDbConnection}
+              disabled={checkingDb}
+              className="px-4 py-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 self-start md:self-center transition-all cursor-pointer shadow-sm disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${checkingDb ? 'animate-spin text-orange-500' : ''}`} />
+              <span>{checkingDb ? 'Checking DB...' : 'Test DB Connection'}</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
           {/* Quick Client Selector */}
           <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-sm">
@@ -558,6 +713,7 @@ export default function AdminDashboard() {
             </div>
           </div>
 
+          </div>
         </div>
       )}
 
@@ -567,12 +723,122 @@ export default function AdminDashboard() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
             <div>
               <h2 className="text-xl font-bold text-slate-900 font-['Outfit']">Registered Clients Directory</h2>
-              <p className="text-xs text-slate-500 font-medium">View registered accounts, company profiles, active projects, and financials</p>
+              <p className="text-xs text-slate-500 font-medium">Manually register clients, assign login credentials, and manage hashed passwords</p>
             </div>
-            <span className="text-xs font-bold text-orange-700 bg-orange-50 px-3 py-1 rounded-full border border-orange-200">
-              {clients.length} Total Registered
-            </span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setIsAddingClient(!isAddingClient)}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>{isAddingClient ? 'Close Form' : '+ Register New Client'}</span>
+              </button>
+              <span className="text-xs font-bold text-orange-700 bg-orange-50 px-3 py-1 rounded-full border border-orange-200">
+                {clients.length} Total Registered
+              </span>
+            </div>
           </div>
+
+          {/* Manual Client Registration Form */}
+          {isAddingClient && (
+            <div className="p-6 rounded-2xl bg-orange-50/50 border border-orange-200 space-y-4 animate-in fade-in duration-300">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-slate-900 font-['Outfit'] flex items-center gap-2">
+                  <UserPlus className="w-4 h-4 text-orange-600" />
+                  <span>Manual Client Account Registration</span>
+                </h3>
+                <span className="text-[11px] text-slate-500 font-medium">Passwords are securely hashed with Bcrypt</span>
+              </div>
+
+              <form onSubmit={handleCreateClient} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Full Name *</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Rahul Sharma"
+                      value={newClientForm.name}
+                      onChange={(e) => setNewClientForm({ ...newClientForm, name: e.target.value })}
+                      required
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs font-medium focus:outline-none focus:border-orange-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Company Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Apex Innovations Pvt Ltd"
+                      value={newClientForm.company}
+                      onChange={(e) => setNewClientForm({ ...newClientForm, company: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs font-medium focus:outline-none focus:border-orange-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Business Email (Login ID) *</label>
+                    <input
+                      type="email"
+                      placeholder="client@company.com"
+                      value={newClientForm.email}
+                      onChange={(e) => setNewClientForm({ ...newClientForm, email: e.target.value })}
+                      required
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs font-medium focus:outline-none focus:border-orange-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Phone Number</label>
+                    <input
+                      type="tel"
+                      placeholder="+91 98765 43210"
+                      value={newClientForm.phone}
+                      onChange={(e) => setNewClientForm({ ...newClientForm, phone: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs font-medium focus:outline-none focus:border-orange-500"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Initial Password (will be hashed) *</label>
+                    <div className="relative">
+                      <input
+                        type={showNewClientPwd ? 'text' : 'password'}
+                        placeholder="Min. 6 characters"
+                        value={newClientForm.password}
+                        onChange={(e) => setNewClientForm({ ...newClientForm, password: e.target.value })}
+                        required
+                        className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs font-medium focus:outline-none focus:border-orange-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewClientPwd(!showNewClientPwd)}
+                        className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
+                      >
+                        {showNewClientPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    type="submit"
+                    disabled={clientSubmitting}
+                    className="px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold shadow-md transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {clientSubmitting ? 'Creating & Hashing...' : 'Create Client & Hash Password (Bcrypt)'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingClient(false)}
+                    className="px-4 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs text-slate-700">
@@ -588,68 +854,93 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {clients.map((c) => (
-                  <tr key={c.id} className="hover:bg-slate-50">
-                    <td className="py-3.5 px-4">
-                      <p className="font-bold text-slate-900">{c.name}</p>
-                      <p className="text-[10px] text-slate-400 font-medium">{c.id}</p>
-                    </td>
-                    <td className="py-3.5 px-4 font-bold text-orange-600">{c.company}</td>
-                    <td className="py-3.5 px-4 space-y-0.5">
-                      <p className="text-slate-800 font-medium">{c.email}</p>
-                      <p className="text-slate-500 text-[10px]">{c.phone || 'No phone'}</p>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <span className="font-semibold text-slate-800">
-                        {c.project?.name || 'Unassigned'}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-16 bg-slate-200 h-2 rounded-full overflow-hidden">
-                          <div
-                            className="bg-orange-500 h-full rounded-full"
-                            style={{ width: `${c.project?.progress || 0}%` }}
-                          ></div>
-                        </div>
-                        <span className="font-bold text-orange-600">{c.project?.progress || 0}%</span>
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <p className="text-emerald-600 font-extrabold">₹{(c.payment?.amountPaid || 0).toLocaleString('en-IN')} Paid</p>
-                      <p className="text-amber-600 font-bold text-[10px]">₹{(c.payment?.balance || 0).toLocaleString('en-IN')} Pending</p>
-                    </td>
-                    <td className="py-3.5 px-4 text-right space-x-2">
-                      <button
-                        onClick={() => {
-                          setSelectedClientId(c.id);
-                          setActiveTab('projects');
-                        }}
-                        className="px-2.5 py-1 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 text-[11px] font-bold border border-orange-200"
-                      >
-                        Manage Project
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedClientId(c.id);
-                          setActiveTab('payments');
-                        }}
-                        className="px-2.5 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[11px] font-bold border border-emerald-200"
-                      >
-                        Payments
-                      </button>
-                      <button
-                        onClick={() => handleSendDueEmail({ clientId: c.id })}
-                        disabled={sendingEmailId === c.id}
-                        title="Send Payment Due Reminder Email to Client"
-                        className="px-2.5 py-1 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-[11px] font-bold shadow-sm inline-flex items-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer"
-                      >
-                        <Mail className="w-3.5 h-3.5" />
-                        {sendingEmailId === c.id ? 'Sending...' : 'Send Due Notice'}
-                      </button>
+                {clients.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="py-12 text-center text-slate-500 font-medium">
+                      No clients registered yet (0 Clients). Click <strong>+ Register New Client</strong> above to manually create a client account.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  clients.map((c) => (
+                    <tr key={c.id} className="hover:bg-slate-50">
+                      <td className="py-3.5 px-4">
+                        <p className="font-bold text-slate-900">{c.name}</p>
+                        <p className="text-[10px] text-slate-400 font-medium">{c.id}</p>
+                      </td>
+                      <td className="py-3.5 px-4 font-bold text-orange-600">{c.company}</td>
+                      <td className="py-3.5 px-4 space-y-0.5">
+                        <p className="text-slate-800 font-medium">{c.email}</p>
+                        <p className="text-slate-500 text-[10px]">{c.phone || 'No phone'}</p>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className="font-semibold text-slate-800">
+                          {c.project?.name || 'Unassigned'}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 bg-slate-200 h-2 rounded-full overflow-hidden">
+                            <div
+                              className="bg-orange-500 h-full rounded-full"
+                              style={{ width: `${c.project?.progress || 0}%` }}
+                            ></div>
+                          </div>
+                          <span className="font-bold text-orange-600">{c.project?.progress || 0}%</span>
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <p className="text-emerald-600 font-extrabold">₹{(c.payment?.amountPaid || 0).toLocaleString('en-IN')} Paid</p>
+                        <p className="text-amber-600 font-bold text-[10px]">₹{(c.payment?.balance || 0).toLocaleString('en-IN')} Pending</p>
+                      </td>
+                      <td className="py-3.5 px-4 text-right space-x-1.5">
+                        <button
+                          onClick={() => {
+                            setSelectedClientId(c.id);
+                            setActiveTab('projects');
+                          }}
+                          className="px-2.5 py-1 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 text-[11px] font-bold border border-orange-200 cursor-pointer"
+                        >
+                          Manage Project
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedClientId(c.id);
+                            setActiveTab('payments');
+                          }}
+                          className="px-2.5 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[11px] font-bold border border-emerald-200 cursor-pointer"
+                        >
+                          Payments
+                        </button>
+                        <button
+                          onClick={() => handleSendDueEmail({ clientId: c.id })}
+                          disabled={sendingEmailId === c.id}
+                          title="Send Payment Due Reminder Email to Client"
+                          className="px-2.5 py-1 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-[11px] font-bold shadow-sm inline-flex items-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer"
+                        >
+                          <Mail className="w-3.5 h-3.5" />
+                          {sendingEmailId === c.id ? 'Sending...' : 'Send Due Notice'}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setPwdModalClient(c);
+                            setClientNewPassword('');
+                          }}
+                          title="Change / Reset Client Password (Bcrypt Hash)"
+                          className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer inline-flex items-center"
+                        >
+                          <Key className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClient(c.id, c.name)}
+                          title="Delete Client Record"
+                          className="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 cursor-pointer inline-flex items-center"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -1206,6 +1497,61 @@ export default function AdminDashboard() {
               </div>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: RESET CLIENT PASSWORD */}
+      {pwdModalClient && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <Key className="w-5 h-5 text-orange-600" />
+                <h3 className="text-base font-bold text-slate-900 font-['Outfit']">Change Client Password</h3>
+              </div>
+              <button
+                onClick={() => setPwdModalClient(null)}
+                className="text-slate-400 hover:text-slate-600 font-bold p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-600">
+              Setting new password for <strong className="text-slate-900">{pwdModalClient.name}</strong> ({pwdModalClient.email}). Password will be encrypted with Bcrypt.
+            </p>
+
+            <form onSubmit={handleUpdateClientPassword} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">New Password (Min. 6 chars)</label>
+                <input
+                  type="password"
+                  placeholder="Enter new secure password"
+                  value={clientNewPassword}
+                  onChange={(e) => setClientNewPassword(e.target.value)}
+                  required
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs font-medium focus:outline-none focus:border-orange-500"
+                />
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={pwdSubmitting}
+                  className="flex-1 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs shadow-md transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {pwdSubmitting ? 'Updating...' : 'Update & Hash with Bcrypt'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPwdModalClient(null)}
+                  className="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

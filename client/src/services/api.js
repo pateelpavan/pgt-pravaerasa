@@ -48,8 +48,12 @@ export const api = {
 
   // Admin Portal
   getAdminOverview: () => request('/admin/overview', { method: 'GET' }),
+  getDbStatus: () => request('/admin/db-status', { method: 'GET' }),
   getAdminClients: () => request('/admin/clients', { method: 'GET' }),
   getAdminClientDetails: (id) => request(`/admin/client/${id}`, { method: 'GET' }),
+  createAdminClient: (payload) => request('/admin/clients', { method: 'POST', body: JSON.stringify(payload) }),
+  updateClientPassword: (id, payload) => request(`/admin/client/${id}/password`, { method: 'PUT', body: JSON.stringify(payload) }),
+  deleteClient: (id) => request(`/admin/client/${id}`, { method: 'DELETE' }),
   saveProject: (payload) => request('/admin/projects', { method: 'POST', body: JSON.stringify(payload) }),
   updateProject: (id, payload) => request(`/admin/projects/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
   addMilestone: (projectId, payload) => request(`/admin/projects/${projectId}/milestones`, { method: 'POST', body: JSON.stringify(payload) }),
