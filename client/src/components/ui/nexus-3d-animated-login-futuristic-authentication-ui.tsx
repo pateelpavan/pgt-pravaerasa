@@ -1466,7 +1466,7 @@ export function NexusLogin({
                 aria-busy={busy === "email"}
                 whileHover={animate && !loading ? { y: -2 } : undefined}
                 whileTap={loading ? undefined : { scale: 0.98 }}
-                className="group relative isolate flex h-12 w-full items-center justify-center gap-2 overflow-hidden rounded-xl text-sm font-semibold text-white shadow-lg transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-80"
+                className="group relative isolate flex h-12 w-full items-center justify-center gap-2 overflow-hidden rounded-full text-sm font-semibold text-white shadow-lg transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-80"
                 style={{
                   backgroundImage: `linear-gradient(135deg, ${accent}, ${BLUE})`,
                   boxShadow: `0 12px 30px -10px ${withAlpha(accent, 0.8)}`,

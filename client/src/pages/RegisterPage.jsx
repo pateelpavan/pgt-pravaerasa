@@ -287,7 +287,7 @@ export default function RegisterPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="group relative isolate flex h-12 w-full items-center justify-center gap-2 overflow-hidden rounded-xl text-sm font-bold text-white shadow-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-80"
+                  className="group relative isolate flex h-12 w-full items-center justify-center gap-2 overflow-hidden rounded-full text-sm font-bold text-white shadow-lg transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-80"
                   style={{
                     backgroundImage: 'linear-gradient(135deg, #EA580C, #F97316)',
                     boxShadow: '0 12px 30px -10px rgba(234, 88, 12, 0.6)',

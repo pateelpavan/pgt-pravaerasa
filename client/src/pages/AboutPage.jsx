@@ -239,6 +239,30 @@ export default function AboutPage() {
         </div>
       </section>
 
+      {/* 6. Curved CTA Section */}
+      <section className="text-center py-12 px-6 sm:px-12 rounded-3xl bg-gradient-to-r from-orange-600 via-amber-500 to-orange-500 text-white shadow-xl max-w-4xl mx-auto space-y-6">
+        <h2 className="text-3xl sm:text-4xl font-extrabold font-['Outfit']">
+          Ready to Elevate Your Engineering Capabilities?
+        </h2>
+        <p className="text-orange-50 text-sm sm:text-base max-w-2xl mx-auto font-medium">
+          Whether you need dedicated freelance architects or transparent milestone EMI delivery, we are ready to partner with you.
+        </p>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
+          <a
+            href="/contact"
+            className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-white text-orange-600 font-bold text-sm shadow-md hover:bg-orange-50 transition-all active:scale-95 cursor-pointer"
+          >
+            Start Technical Engagement
+          </a>
+          <a
+            href="/register"
+            className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-orange-700/60 hover:bg-orange-700 text-white border border-white/20 font-bold text-sm transition-all active:scale-95 cursor-pointer"
+          >
+            Register as Client
+          </a>
+        </div>
+      </section>
+
     </div>
   );
 }

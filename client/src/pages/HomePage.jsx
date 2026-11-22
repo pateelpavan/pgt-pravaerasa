@@ -154,7 +154,7 @@ export default function HomePage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
             <Link
               to="/register"
-              className="w-full sm:w-auto px-8 py-4 rounded-xl text-base font-bold text-white bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 hover:from-orange-600 hover:to-amber-600 shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2 group"
+              className="w-full sm:w-auto px-8 py-4 rounded-full text-base font-bold text-white bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 hover:from-orange-600 hover:to-amber-600 shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 transition-all duration-300 active:scale-95 flex items-center justify-center gap-2 group cursor-pointer"
             >
               <span>Get Started</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -162,7 +162,7 @@ export default function HomePage() {
 
             <Link
               to="/login"
-              className="w-full sm:w-auto px-8 py-4 rounded-xl text-base font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 hover:border-orange-400 hover:text-orange-600 shadow-sm transition-all duration-300 flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-8 py-4 rounded-full text-base font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 hover:border-orange-400 hover:text-orange-600 shadow-sm transition-all duration-300 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
             >
               <span>Login to Portal</span>
             </Link>
@@ -342,13 +342,13 @@ export default function HomePage() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
               <Link
                 to="/register"
-                className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-white text-orange-700 font-bold text-sm shadow-md hover:bg-orange-50 transition-all transform hover:scale-105"
+                className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-white text-orange-700 font-bold text-sm shadow-md hover:bg-orange-50 transition-all active:scale-95 cursor-pointer"
               >
                 Register as a Client
               </Link>
               <Link
                 to="/contact"
-                className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-orange-700/60 hover:bg-orange-700 text-white border border-white/20 font-bold text-sm transition-all"
+                className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-orange-700/60 hover:bg-orange-700 text-white border border-white/20 font-bold text-sm transition-all active:scale-95 cursor-pointer"
               >
                 Schedule Free Consultation
               </Link>
